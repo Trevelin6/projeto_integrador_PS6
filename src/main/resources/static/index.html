@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hortech - Sistema de Irrigação</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --primary: #10b981;
+            --primary-hover: #059669;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --accent-blue: #3b82f6;
+            --accent-amber: #f59e0b;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --radius: 16px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        /* HEADER */
+        header {
+            padding: 24px 32px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #ffffff;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--primary);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .brand-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .brand-subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .user-status {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .badge-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #ecfdf5;
+            color: #047857;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--primary);
+        }
+
+        /* LOGIN SCREEN */
+        #login-screen {
+            padding: 48px 32px;
+            max-width: 400px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .login-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .login-subtitle {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 32px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            outline: none;
+            transition: border 0.2s;
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+        }
+
+        /* DASHBOARD SCREEN */
+        #dashboard-screen {
+            display: none;
+            padding: 32px;
+        }
+
+        /* VIEW SWITCHER TABS */
+        .controls-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .view-tabs {
+            display: flex;
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: 12px;
+            gap: 4px;
+        }
+
+        .tab-btn {
+            padding: 8px 16px;
+            border: none;
+            background: transparent;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-muted);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            background: white;
+            color: var(--text-main);
+            box-shadow: var(--shadow);
+        }
+
+        /* ACTION BUTTON WITH LOCK */
+        .btn-irrigate {
+            padding: 12px 24px;
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-irrigate:hover:not(:disabled) {
+            background: #2563eb;
+        }
+
+        .btn-irrigate:disabled {
+            background: #cbd5e1;
+            cursor: not-allowed;
+            color: #64748b;
+        }
+
+        /* VIEWS CONTAINER */
+        .view-content {
+            display: none;
+        }
+
+        .view-content.active {
+            display: block;
+        }
+
+        /* CARDS VIEW */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+        }
+
+        .metric-card {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .metric-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .metric-icon {
+            font-size: 20px;
+        }
+
+        .metric-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 8px;
+        }
+
+        .metric-footer {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* GRAPH VIEW */
+        .chart-container {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+            height: 350px;
+        }
+
+        /* TABLE VIEW */
+        .table-container {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        th {
+            background: #f8fafc;
+            padding: 14px 20px;
+            font-weight: 600;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-main);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* TOAST FEEDBACK */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #0f172a;
+            color: white;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            display: none;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- HEADER -->
+        <header>
+            <div class="brand">
+                <div class="brand-icon">🌱</div>
+                <div>
+                    <div class="brand-title">Hortech</div>
+                    <div class="brand-subtitle">Sistema Inteligente de Irrigação</div>
+                </div>
+            </div>
+            <div class="user-status" id="header-status" style="display: none;">
+                <div class="badge-status">
+                    <span class="dot"></span>
+                    <span id="system-mode">Automático</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- LOGIN SCREEN -->
+        <div id="login-screen">
+            <h2 class="login-title">Acessar Painel</h2>
+            <p class="login-subtitle">Digite suas credenciais do Hortech</p>
+            <form id="login-form">
+                <div class="input-group">
+                    <label>E-mail</label>
+                    <input type="email" id="email" value="mario@hortech.com" required>
+                </div>
+                <div class="input-group">
+                    <label>Senha</label>
+                    <input type="password" id="senha" value="123456" required>
+                </div>
+                <button type="submit" class="btn-primary">Entrar no Sistema</button>
+            </form>
+        </div>
+
+        <!-- DASHBOARD SCREEN -->
+        <div id="dashboard-screen">
+            <!-- CONTROLS & SWITCHER -->
+            <div class="controls-bar">
+                <div class="view-tabs">
+                    <button class="tab-btn active" onclick="switchView('cards')">🎴 Cards</button>
+                    <button class="tab-btn" onclick="switchView('chart')">📈 Gráfico</button>
+                    <button class="tab-btn" onclick="switchView('table')">📋 Tabela</button>
+                </div>
+
+                <button class="btn-irrigate" id="btn-irrigate" onclick="triggerIrrigation()">
+                    <span>💧</span> Irrigar Agora
+                </button>
+            </div>
+
+            <!-- VIEW 1: CARDS -->
+            <div id="view-cards" class="view-content active">
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <span class="metric-title">Umidade do Solo</span>
+                            <span class="metric-icon">💧</span>
+                        </div>
+                        <div class="metric-value" id="card-umidade">42%</div>
+                        <div class="metric-footer">Limite Mínimo: 45%</div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <span class="metric-title">Temperatura</span>
+                            <span class="metric-icon">🌡️</span>
+                        </div>
+                        <div class="metric-value" id="card-temp">26°C</div>
+                        <div class="metric-footer">Limite Máximo: 30°C</div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <span class="metric-title">Luminosidade</span>
+                            <span class="metric-icon">☀️</span>
+                        </div>
+                        <div class="metric-value" id="card-lum">520 Lux</div>
+                        <div class="metric-footer">Limite Máximo: 600 Lux</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 2: GRAPH -->
+            <div id="view-chart" class="view-content">
+                <div class="chart-container">
+                    <canvas id="sensorChart"></canvas>
+                </div>
+            </div>
+
+            <!-- VIEW 3: TABLE -->
+            <div id="view-table" class="view-content">
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Horário</th>
+                                <th>Umidade</th>
+                                <th>Temperatura</th>
+                                <th>Luminosidade</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">Feedback...</div>
+
+    <script>
+        let isLocked = false;
+        let lockTimer = null;
+        let lockTimeRemaining = 0;
+        let sensorChart = null;
+
+        let mockData = [
+            { time: '15:30', umidade: 42, temp: 26, lum: 520 },
+            { time: '15:25', umidade: 40, temp: 27, lum: 540 },
+            { time: '15:20', umidade: 38, temp: 28, lum: 580 },
+            { time: '15:15', umidade: 45, temp: 25, lum: 510 }
+        ];
+
+        // LOGIN
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('dashboard-screen').style.display = 'block';
+            document.getElementById('header-status').style.display = 'flex';
+            showToast('Bem-vindo ao Hortech!');
+            initChart();
+            loadData();
+            setInterval(loadData, 5000);
+        });
+
+        // VIEW SWITCHER
+        function switchView(viewName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.view-content').forEach(view => view.classList.remove('active'));
+
+            if (viewName === 'cards') {
+                event.target.classList.add('active');
+                document.getElementById('view-cards').classList.add('active');
+            } else if (viewName === 'chart') {
+                event.target.classList.add('active');
+                document.getElementById('view-chart').classList.add('active');
+            } else if (viewName === 'table') {
+                event.target.classList.add('active');
+                document.getElementById('view-table').classList.add('active');
+            }
+        }
+
+        // LOAD DATA
+        function loadData() {
+            fetch('/api/horta/1/leituras')
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.length > 0) {
+                        updateUI(data.map(d => ({
+                            time: new Date(d.dataHoraLeitura).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                            umidade: d.umidade,
+                            temp: d.temperatura,
+                            lum: d.luminosidade
+                        })));
+                    }
+                })
+                .catch(() => {
+                    // Fallback simulation
+                    const now = new Date();
+                    const timeStr = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    const umidade = Math.floor(Math.random() * 30) + 35;
+                    const temp = Math.floor(Math.random() * 10) + 22;
+                    const lum = Math.floor(Math.random() * 300) + 400;
+
+                    mockData.unshift({ time: timeStr, umidade, temp, lum });
+                    if (mockData.length > 10) mockData.pop();
+                    updateUI(mockData);
+                });
+        }
+
+        function updateUI(readings) {
+            const latest = readings[0];
+            document.getElementById('card-umidade').innerText = latest.umidade + '%';
+            document.getElementById('card-temp').innerText = latest.temp + '°C';
+            document.getElementById('card-lum').innerText = latest.lum + ' Lux';
+
+            // Update Table
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = readings.map(r => `
+                <tr>
+                    <td>${r.time}</td>
+                    <td><strong>${r.umidade}%</strong></td>
+                    <td>${r.temp}°C</td>
+                    <td>${r.lum} Lux</td>
+                </tr>
+            `).join('');
+
+            // Update Chart
+            if (sensorChart) {
+                sensorChart.data.labels = readings.map(r => r.time).reverse();
+                sensorChart.data.datasets[0].data = readings.map(r => r.umidade).reverse();
+                sensorChart.data.datasets[1].data = readings.map(r => r.temp).reverse();
+                sensorChart.update();
+            }
+        }
+
+        // CHART INIT
+        function initChart() {
+            const ctx = document.getElementById('sensorChart').getContext('2d');
+            sensorChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Umidade (%)',
+                            data: [],
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            fill: true,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Temperatura (°C)',
+                            data: [],
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            fill: true,
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        // FORCED IRRIGATION WITH 10-MIN LOCK (600 SECONDS)
+        function triggerIrrigation() {
+            if (isLocked) return;
+
+            const btn = document.getElementById('btn-irrigate');
+            fetch('/api/horta/1/irrigacao-forcada', { method: 'POST' }).catch(() => {});
+
+            showToast('💧 Irrigação forçada iniciada! Trava de 10 minutos ativada.');
+            
+            isLocked = true;
+            lockTimeRemaining = 600; // 10 minutes = 600 seconds
+            btn.disabled = true;
+
+            updateTimerButton();
+            lockTimer = setInterval(() => {
+                lockTimeRemaining--;
+                if (lockTimeRemaining <= 0) {
+                    clearInterval(lockTimer);
+                    isLocked = false;
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>💧</span> Irrigar Agora';
+                    showToast('Pronto para novo acionamento de irrigação.');
+                } else {
+                    updateTimerButton();
+                }
+            }, 1000);
+        }
+
+        function updateTimerButton() {
+            const btn = document.getElementById('btn-irrigate');
+            const min = Math.floor(lockTimeRemaining / 60);
+            const sec = lockTimeRemaining % 60;
+            const timeStr = `${min}:${sec < 10 ? '0' : ''}${sec}`;
+            btn.innerHTML = `<span>⏳</span> Bloqueado (${timeStr})`;
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 4000);
+        }
+    </script>
+</body>
+</html>

@@ -6,7 +6,6 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "historico_leitura_sensores")
 public class HistoricoLeituraSensor {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_leitura")
@@ -29,15 +28,6 @@ public class HistoricoLeituraSensor {
     private Integer luminosidade;
 
     public HistoricoLeituraSensor() {}
-
-    public HistoricoLeituraSensor(Long idLeitura, Horta horta, LocalDateTime dataHoraLeitura, Integer umidade, Integer temperatura, Integer luminosidade) {
-        this.idLeitura = idLeitura;
-        this.horta = horta;
-        this.dataHoraLeitura = dataHoraLeitura;
-        this.umidade = umidade;
-        this.temperatura = temperatura;
-        this.luminosidade = luminosidade;
-    }
 
     public Long getIdLeitura() { return idLeitura; }
     public void setIdLeitura(Long idLeitura) { this.idLeitura = idLeitura; }

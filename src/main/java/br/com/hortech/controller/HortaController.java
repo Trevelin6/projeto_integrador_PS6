@@ -26,14 +26,21 @@ public class HortaController {
         this.notificacaoRepository = notificacaoRepository;
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<Horta> buscarPorId(@PathVariable Long id) {
+        return hortaRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @GetMapping("/{id}/leituras")
     public List<HistoricoLeituraSensor> leituras(@PathVariable Long id) {
         return sensorRepository.findTop10ByHortaIdHortaOrderByIdLeituraDesc(id);
     }
 
     @GetMapping("/{id}/notificacoes")
-    public List<Notificacao> notificacoesNaoLidas(@PathVariable Long id) {
-        return notificacaoRepository.findByHortaIdHortaAndNotificacaoVisualizadaFalse(id);
+    public List<Notificacao> notificacoes(@PathVariable Long id) {
+        return notificacaoRepository.findByHortaIdHorta(id);
     }
 
     @PostMapping("/{id}/irrigacao-forcada")
@@ -48,6 +55,6 @@ public class HortaController {
             acionamentoRepository.save(acionamento);
         }
 
-        return ResponseEntity.ok("Irrigacao forcada ativada por " + horta.getTempoIrrigacaoPadrao() + " segundos.");
+        return ResponseEntity.ok("Irrigacao forcada ativada com sucesso por " + horta.getTempoIrrigacaoPadrao() + " segundos.");
     }
 }

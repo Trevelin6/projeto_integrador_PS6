@@ -5,7 +5,6 @@ import jakarta.persistence.*;
 @Entity
 @Table(name = "horta")
 public class Horta {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_horta")
@@ -30,16 +29,6 @@ public class Horta {
     private Integer tempoIrrigacaoPadrao;
 
     public Horta() {}
-
-    public Horta(Long idHorta, String nomeHorta, Integer umidadeLimite, Integer temperaturaLimite, Integer luminosidadeLimite, String modoAutomacao, Integer tempoIrrigacaoPadrao) {
-        this.idHorta = idHorta;
-        this.nomeHorta = nomeHorta;
-        this.umidadeLimite = umidadeLimite;
-        this.temperaturaLimite = temperaturaLimite;
-        this.luminosidadeLimite = luminosidadeLimite;
-        this.modoAutomacao = modoAutomacao;
-        this.tempoIrrigacaoPadrao = tempoIrrigacaoPadrao;
-    }
 
     public Long getIdHorta() { return idHorta; }
     public void setIdHorta(Long idHorta) { this.idHorta = idHorta; }

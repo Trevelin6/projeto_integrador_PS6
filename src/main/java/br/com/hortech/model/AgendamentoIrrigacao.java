@@ -6,7 +6,6 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "agendamento_irrigacoes")
 public class AgendamentoIrrigacao {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_agendamento")
@@ -23,13 +22,6 @@ public class AgendamentoIrrigacao {
     private Integer tempoIrrigacaoSegundos;
 
     public AgendamentoIrrigacao() {}
-
-    public AgendamentoIrrigacao(Long idAgendamento, Horta horta, LocalDateTime horarioExecucao, Integer tempoIrrigacaoSegundos) {
-        this.idAgendamento = idAgendamento;
-        this.horta = horta;
-        this.horarioExecucao = horarioExecucao;
-        this.tempoIrrigacaoSegundos = tempoIrrigacaoSegundos;
-    }
 
     public Long getIdAgendamento() { return idAgendamento; }
     public void setIdAgendamento(Long idAgendamento) { this.idAgendamento = idAgendamento; }

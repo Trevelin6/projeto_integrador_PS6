@@ -6,7 +6,6 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "historico_acionamento_bomba")
 public class HistoricoAcionamentoBomba {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_acionamento")
@@ -23,13 +22,6 @@ public class HistoricoAcionamentoBomba {
     private String origem;
 
     public HistoricoAcionamentoBomba() {}
-
-    public HistoricoAcionamentoBomba(Long idAcionamento, HistoricoLeituraSensor leitura, LocalDateTime dataHoraAcionamento, String origem) {
-        this.idAcionamento = idAcionamento;
-        this.leitura = leitura;
-        this.dataHoraAcionamento = dataHoraAcionamento;
-        this.origem = origem;
-    }
 
     public Long getIdAcionamento() { return idAcionamento; }
     public void setIdAcionamento(Long idAcionamento) { this.idAcionamento = idAcionamento; }

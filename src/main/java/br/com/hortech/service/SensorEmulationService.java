@@ -25,7 +25,7 @@ public class SensorEmulationService {
         this.notificacaoRepository = notificacaoRepository;
     }
 
-    @Scheduled(fixedRate = 5000)
+    @Scheduled(fixedRate = 15000)
     public void processarLeiturasEAutomacao() {
         hortaRepository.findAll().forEach(horta -> {
             int umidade = random.nextInt(40) + 30;
@@ -42,15 +42,29 @@ public class SensorEmulationService {
             if (temperatura > horta.getTemperaturaLimite()) {
                 Notificacao alerta = new Notificacao();
                 alerta.setHorta(horta);
-                alerta.setAssuntoAlerta("Temperatura elevada: " + temperatura + "C");
+                alerta.setAssuntoAlerta("Alerta: Temperatura elevada (" + temperatura + "°C)");
                 notificacaoRepository.save(alerta);
             }
 
-            if ("AUTOMATICO".equalsIgnoreCase(horta.getModoAutomacao()) && umidade < horta.getUmidadeLimite()) {
-                HistoricoAcionamentoBomba acionamento = new HistoricoAcionamentoBomba();
-                acionamento.setLeitura(leitura);
-                acionamento.setOrigem("AUTOMATICO");
-                acionamentoRepository.save(acionamento);
+            if (umidade < horta.getUmidadeLimite()) {
+                Notificacao alerta = new Notificacao();
+                alerta.setHorta(horta);
+                alerta.setAssuntoAlerta("Alerta: Umidade do solo baixa (" + umidade + "%) - Irrigação solicitada");
+                notificacaoRepository.save(alerta);
+
+                if ("AUTOMATICO".equalsIgnoreCase(horta.getModoAutomacao())) {
+                    HistoricoAcionamentoBomba acionamento = new HistoricoAcionamentoBomba();
+                    acionamento.setLeitura(leitura);
+                    acionamento.setOrigem("AUTOMATICO");
+                    acionamentoRepository.save(acionamento);
+                }
+            }
+
+            if (luminosidade > horta.getLuminosidadeLimite()) {
+                Notificacao alerta = new Notificacao();
+                alerta.setHorta(horta);
+                alerta.setAssuntoAlerta("Alerta: Alta incidencia solar (" + luminosidade + " Lux)");
+                notificacaoRepository.save(alerta);
             }
         });
     }

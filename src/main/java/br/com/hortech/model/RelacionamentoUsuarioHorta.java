@@ -5,7 +5,6 @@ import jakarta.persistence.*;
 @Entity
 @Table(name = "relacionamento_usuario_horta")
 public class RelacionamentoUsuarioHorta {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_relacionamento")
@@ -23,13 +22,6 @@ public class RelacionamentoUsuarioHorta {
     private String papel;
 
     public RelacionamentoUsuarioHorta() {}
-
-    public RelacionamentoUsuarioHorta(Long idRelacionamento, Usuario usuario, Horta horta, String papel) {
-        this.idRelacionamento = idRelacionamento;
-        this.usuario = usuario;
-        this.horta = horta;
-        this.papel = papel;
-    }
 
     public Long getIdRelacionamento() { return idRelacionamento; }
     public void setIdRelacionamento(Long idRelacionamento) { this.idRelacionamento = idRelacionamento; }
