@@ -105,11 +105,20 @@
             gap: 6px;
         }
 
+        .badge-status.is-disabled {
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+
         .dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
             background: var(--primary);
+        }
+
+        .badge-status.is-disabled .dot {
+            background: #dc2626;
         }
 
         /* LOGIN SCREEN */
@@ -198,6 +207,7 @@
             padding: 4px;
             border-radius: 12px;
             gap: 4px;
+            flex-wrap: wrap;
         }
 
         .tab-btn {
@@ -218,7 +228,7 @@
             box-shadow: var(--shadow);
         }
 
-        /* ACTION BUTTON WITH LOCK */
+        /* FORCED IRRIGATION CONTROL */
         .btn-irrigate {
             padding: 12px 24px;
             background: var(--accent-blue);
@@ -238,10 +248,34 @@
             background: #2563eb;
         }
 
+        .btn-irrigate.is-running {
+            background: #dc2626;
+        }
+
+        .btn-irrigate.is-running:hover:not(:disabled) {
+            background: #b91c1c;
+        }
+
         .btn-irrigate:disabled {
             background: #cbd5e1;
             cursor: not-allowed;
             color: #64748b;
+        }
+
+        .irrigation-control {
+            min-width: 190px;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 8px;
+        }
+
+        .irrigation-timer {
+            min-height: 18px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13px;
+            font-variant-numeric: tabular-nums;
         }
 
         /* VIEWS CONTAINER */
@@ -342,6 +376,126 @@
             color: var(--text-main);
         }
 
+        .irrigation-check {
+            color: #16a34a;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .irrigation-origin {
+            display: inline-block;
+            margin: 2px 4px 2px 0;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .origin-automatic {
+            color: #1d4ed8;
+            background: #dbeafe;
+        }
+
+        .origin-scheduled {
+            color: #7e22ce;
+            background: #f3e8ff;
+        }
+
+        .origin-forced {
+            color: #c2410c;
+            background: #ffedd5;
+        }
+
+        .origin-other {
+            color: #475569;
+            background: #f1f5f9;
+        }
+
+        .configuration-card {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+        }
+
+        .configuration-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .configuration-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .configuration-card .input-group {
+            margin-bottom: 16px;
+        }
+
+        .configuration-card .input-group input,
+        .configuration-card .input-group select {
+            width: 100%;
+            padding: 11px 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .configuration-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .configuration-actions button,
+        .schedule-delete {
+            border: 0;
+            border-radius: 10px;
+            padding: 11px 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-stop-automation {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .btn-save-configuration,
+        .btn-add-schedule {
+            background: var(--primary);
+            color: white;
+        }
+
+        .schedule-list {
+            list-style: none;
+            display: grid;
+            gap: 10px;
+        }
+
+        .schedule-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+        }
+
+        .schedule-delete {
+            padding: 8px 12px;
+            background: #f1f5f9;
+            color: #475569;
+        }
+
         tr:last-child td {
             border-bottom: none;
         }
@@ -405,14 +559,18 @@
             <!-- CONTROLS & SWITCHER -->
             <div class="controls-bar">
                 <div class="view-tabs">
-                    <button class="tab-btn active" onclick="switchView('cards')">🎴 Cards</button>
-                    <button class="tab-btn" onclick="switchView('chart')">📈 Gráfico</button>
-                    <button class="tab-btn" onclick="switchView('table')">📋 Tabela</button>
+                    <button class="tab-btn active" onclick="switchView('cards', event)">🎴 Cards</button>
+                    <button class="tab-btn" onclick="switchView('chart', event)">📈 Gráfico</button>
+                    <button class="tab-btn" onclick="switchView('table', event)">📋 Tabela</button>
+                    <button class="tab-btn" onclick="switchView('configuration', event)">⚙️ Configuração</button>
                 </div>
 
-                <button class="btn-irrigate" id="btn-irrigate" onclick="triggerIrrigation()">
-                    <span>💧</span> Irrigar Agora
-                </button>
+                <div class="irrigation-control">
+                    <button class="btn-irrigate" id="btn-irrigate" onclick="triggerIrrigation()">
+                        <span>💧</span> Irrigação Forçada
+                    </button>
+                    <div class="irrigation-timer" id="irrigation-timer" aria-live="polite"></div>
+                </div>
             </div>
 
             <!-- VIEW 1: CARDS -->
@@ -464,6 +622,8 @@
                                 <th>Umidade</th>
                                 <th>Temperatura</th>
                                 <th>Luminosidade</th>
+                                <th>Origem</th>
+                                <th>Irrigação</th>
                             </tr>
                         </thead>
                         <tbody id="table-body">
@@ -472,16 +632,82 @@
                     </table>
                 </div>
             </div>
+
+            <!-- VIEW 4: CONFIGURATION -->
+            <div id="view-configuration" class="view-content">
+                <section class="configuration-card">
+                    <h2 class="configuration-title">Parâmetros da horta</h2>
+                    <form id="configuration-form">
+                        <div class="configuration-grid">
+                            <div class="input-group">
+                                <label for="config-humidity-limit">Limite de umidade (%)</label>
+                                <input type="number" id="config-humidity-limit" min="0" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="config-luminosity-limit">Limite de luminosidade (Lux)</label>
+                                <input type="number" id="config-luminosity-limit" min="0" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="config-temperature-limit">Limite de temperatura (°C)</label>
+                                <input type="number" id="config-temperature-limit" min="0" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="config-mode">Modo de irrigação</label>
+                                <select id="config-mode" required>
+                                    <option value="AUTOMATICO">Automático</option>
+                                    <option value="MANUAL">Manual</option>
+                                    <option value="DESLIGADO">Desligado</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label for="config-default-irrigation-duration">Tempo de irrigação padrão (segundos)</label>
+                                <input type="number" id="config-default-irrigation-duration" min="1" required>
+                            </div>
+                        </div>
+                        <div class="configuration-actions">
+                            <button type="submit" class="btn-save-configuration">Salvar configuração</button>
+                            <button type="button" class="btn-stop-automation" onclick="stopAutomation()">Parar automação</button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="configuration-card" id="schedule-section">
+                    <h2 class="configuration-title">Agendamentos diários</h2>
+                    <p class="metric-footer">Os horários são executados diariamente quando o modo Manual está ativo.</p>
+                    <form id="schedule-form">
+                        <div class="configuration-grid">
+                            <div class="input-group">
+                                <label for="schedule-time">Horário da irrigação</label>
+                                <input type="time" id="schedule-time" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="schedule-duration">Tempo de irrigação (segundos)</label>
+                                <input type="number" id="schedule-duration" min="1" required>
+                            </div>
+                        </div>
+                        <div class="configuration-actions">
+                            <button type="submit" class="btn-add-schedule">Adicionar horário</button>
+                        </div>
+                    </form>
+                    <ul id="schedule-list" class="schedule-list" aria-live="polite"></ul>
+                </section>
+            </div>
         </div>
     </div>
 
     <div class="toast" id="toast">Feedback...</div>
 
     <script>
-        let isLocked = false;
-        let lockTimer = null;
-        let lockTimeRemaining = 0;
+        let irrigationTimer = null;
+        let irrigationEndsAt = 0;
+        let isIrrigationActive = false;
+        let isStartingIrrigation = false;
+        let activeIrrigation = null;
+        let dataRefreshTimer = null;
+        let irrigationStatusTimer = null;
         let sensorChart = null;
+        const hortaId = 1;
+        let currentConfiguration = null;
 
         let mockData = [
             { time: '15:30', umidade: 42, temp: 26, lum: 520 },
@@ -499,49 +725,66 @@
             showToast('Bem-vindo ao Hortech!');
             initChart();
             loadData();
-            setInterval(loadData, 5000);
+            loadConfiguration();
+            loadSchedules();
+            loadIrrigationStatus();
+            dataRefreshTimer = setInterval(loadData, 5000);
+            irrigationStatusTimer = setInterval(loadIrrigationStatus, 3000);
         });
 
         // VIEW SWITCHER
-        function switchView(viewName) {
+        function switchView(viewName, clickEvent) {
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.view-content').forEach(view => view.classList.remove('active'));
 
-            if (viewName === 'cards') {
-                event.target.classList.add('active');
-                document.getElementById('view-cards').classList.add('active');
-            } else if (viewName === 'chart') {
-                event.target.classList.add('active');
-                document.getElementById('view-chart').classList.add('active');
-            } else if (viewName === 'table') {
-                event.target.classList.add('active');
-                document.getElementById('view-table').classList.add('active');
-            }
+            clickEvent.currentTarget.classList.add('active');
+            document.getElementById(`view-${viewName}`).classList.add('active');
         }
 
         // LOAD DATA
         function loadData() {
-            fetch('/api/horta/1/leituras')
-                .then(res => res.json())
-                .then(data => {
+            Promise.all([
+                fetch('/api/horta/1/leituras').then(res => {
+                    if (!res.ok) throw new Error('Falha ao carregar leituras');
+                    return res.json();
+                }),
+                fetch('/api/horta/1/acionamentos').then(res => {
+                    if (!res.ok) throw new Error('Falha ao carregar acionamentos');
+                    return res.json();
+                })
+            ])
+                .then(([data, acionamentos]) => {
                     if (data && data.length > 0) {
+                        const acionamentosPorLeitura = new Map();
+                        acionamentos.forEach(acionamento => {
+                            const registros = acionamentosPorLeitura.get(acionamento.idLeitura) || [];
+                            registros.push({
+                                origem: acionamento.origem,
+                                origemLabel: irrigationOriginLabel(acionamento.origem),
+                                origemClass: irrigationOriginClass(acionamento.origem),
+                                horario: formatReadingTime(acionamento.dataHoraAcionamento)
+                            });
+                            acionamentosPorLeitura.set(acionamento.idLeitura, registros);
+                        });
                         updateUI(data.map(d => ({
-                            time: new Date(d.dataHoraLeitura).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                            idLeitura: d.idLeitura,
+                            time: formatReadingTime(d.dataHoraLeitura),
                             umidade: d.umidade,
                             temp: d.temperatura,
-                            lum: d.luminosidade
+                            lum: d.luminosidade,
+                            irrigationSources: acionamentosPorLeitura.get(d.idLeitura) || []
                         })));
                     }
                 })
                 .catch(() => {
                     // Fallback simulation
                     const now = new Date();
-                    const timeStr = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    const timeStr = formatBrasiliaTime(now);
                     const umidade = Math.floor(Math.random() * 30) + 35;
                     const temp = Math.floor(Math.random() * 10) + 22;
                     const lum = Math.floor(Math.random() * 300) + 400;
 
-                    mockData.unshift({ time: timeStr, umidade, temp, lum });
+                    mockData.unshift({ time: timeStr, umidade, temp, lum, irrigationSources: [] });
                     if (mockData.length > 10) mockData.pop();
                     updateUI(mockData);
                 });
@@ -557,10 +800,20 @@
             const tbody = document.getElementById('table-body');
             tbody.innerHTML = readings.map(r => `
                 <tr>
-                    <td>${r.time}</td>
+                    <td>
+                        ${r.irrigationSources && r.irrigationSources.length
+                            ? r.irrigationSources.map(source => `<div>${source.horario}</div>`).join('')
+                            : r.time}
+                    </td>
                     <td><strong>${r.umidade}%</strong></td>
                     <td>${r.temp}°C</td>
                     <td>${r.lum} Lux</td>
+                    <td>${(r.irrigationSources || []).map(source =>
+                        `<span class="irrigation-origin ${source.origemClass}">${source.origemLabel}</span>`
+                    ).join('')}</td>
+                    <td>${r.irrigationSources && r.irrigationSources.length
+                        ? '<span class="irrigation-check" aria-label="Irrigação acionada">✓</span>'
+                        : ''}</td>
                 </tr>
             `).join('');
 
@@ -569,7 +822,264 @@
                 sensorChart.data.labels = readings.map(r => r.time).reverse();
                 sensorChart.data.datasets[0].data = readings.map(r => r.umidade).reverse();
                 sensorChart.data.datasets[1].data = readings.map(r => r.temp).reverse();
+                sensorChart.data.datasets[2].data = readings.map(r => r.lum).reverse();
                 sensorChart.update();
+            }
+        }
+
+        function setModeDisplay(mode) {
+            const labels = {
+                AUTOMATICO: 'Automático',
+                MANUAL: 'Manual',
+                DESLIGADO: 'Desligado'
+            };
+            const badge = document.querySelector('#header-status .badge-status');
+            document.getElementById('system-mode').innerText = labels[mode] || mode;
+            badge.classList.toggle('is-disabled', mode === 'DESLIGADO');
+            updateForcedIrrigationAvailability();
+            if (mode === 'DESLIGADO') {
+                if (dataRefreshTimer) {
+                    clearInterval(dataRefreshTimer);
+                    dataRefreshTimer = null;
+                }
+            } else if (!dataRefreshTimer && document.getElementById('dashboard-screen').style.display === 'block') {
+                dataRefreshTimer = setInterval(loadData, 5000);
+            }
+        }
+
+        function updateForcedIrrigationAvailability() {
+            const button = document.getElementById('btn-irrigate');
+            const automationOff = currentConfiguration && currentConfiguration.modoAutomacao === 'DESLIGADO';
+            if (activeIrrigation && activeIrrigation.ativa) {
+                button.disabled = isStartingIrrigation;
+                button.classList.add('is-running');
+                button.innerHTML = '<span>⏹</span> Parar Irrigação';
+                button.onclick = stopIrrigation;
+                return;
+            }
+
+            button.disabled = !currentConfiguration || isStartingIrrigation || automationOff;
+            button.classList.remove('is-running');
+            button.innerHTML = '<span>💧</span> Irrigação Forçada';
+            button.onclick = triggerIrrigation;
+        }
+
+        function applyConfiguration(configuration) {
+            currentConfiguration = configuration;
+            document.getElementById('config-humidity-limit').value = configuration.umidadeLimite;
+            document.getElementById('config-luminosity-limit').value = configuration.luminosidadeLimite;
+            document.getElementById('config-temperature-limit').value = configuration.temperaturaLimite;
+            document.getElementById('config-default-irrigation-duration').value = configuration.tempoIrrigacaoPadrao;
+            document.getElementById('config-mode').value = configuration.modoAutomacao;
+            setModeDisplay(configuration.modoAutomacao);
+            toggleScheduleForm();
+
+            document.querySelector('#view-cards .metric-card:nth-child(1) .metric-footer').innerText =
+                `Limite Mínimo: ${configuration.umidadeLimite}%`;
+            document.querySelector('#view-cards .metric-card:nth-child(2) .metric-footer').innerText =
+                `Limite Máximo: ${configuration.temperaturaLimite}°C`;
+            document.querySelector('#view-cards .metric-card:nth-child(3) .metric-footer').innerText =
+                `Limite Máximo: ${configuration.luminosidadeLimite} Lux`;
+        }
+
+        function loadConfiguration() {
+            fetch(`/api/horta/${hortaId}`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Não foi possível carregar a configuração da horta.');
+                    return response.json();
+                })
+                .then(applyConfiguration)
+                .catch(() => showToast('Erro ao carregar as configurações da horta.'));
+        }
+
+        document.getElementById('configuration-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (document.getElementById('config-mode').value === 'DESLIGADO'
+                    && (!currentConfiguration || currentConfiguration.modoAutomacao !== 'DESLIGADO')
+                    && !confirm('Desligar a automação? Isso pausará as leituras e bloqueará todas as irrigações automáticas, manuais e forçadas.')) {
+                document.getElementById('config-mode').value =
+                    currentConfiguration ? currentConfiguration.modoAutomacao : 'AUTOMATICO';
+                toggleScheduleForm();
+                return;
+            }
+
+            saveConfiguration({
+                umidadeLimite: Number(document.getElementById('config-humidity-limit').value),
+                luminosidadeLimite: Number(document.getElementById('config-luminosity-limit').value),
+                temperaturaLimite: Number(document.getElementById('config-temperature-limit').value),
+                tempoIrrigacaoPadrao: Number(document.getElementById('config-default-irrigation-duration').value),
+                modoAutomacao: document.getElementById('config-mode').value
+            });
+        });
+
+        function saveConfiguration(configuration) {
+            fetch(`/api/horta/${hortaId}/configuracao`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(configuration)
+            })
+                .then(response => {
+                    if (!response.ok) throw new Error('Não foi possível salvar a configuração.');
+                    return response.json();
+                })
+                .then(savedConfiguration => {
+                    applyConfiguration(savedConfiguration);
+                    if (savedConfiguration.modoAutomacao === 'DESLIGADO') {
+                        finishIrrigationUI();
+                    }
+                    loadIrrigationStatus();
+                    showToast('Configuração salva com sucesso.');
+                })
+                .catch(() => {
+                    if (currentConfiguration) applyConfiguration(currentConfiguration);
+                    showToast('Erro ao salvar a configuração.');
+                });
+        }
+
+        document.getElementById('config-mode').addEventListener('change', toggleScheduleForm);
+
+        function toggleScheduleForm() {
+            const isManual = document.getElementById('config-mode').value === 'MANUAL';
+            document.getElementById('schedule-section').style.display = isManual ? 'block' : 'none';
+        }
+
+        function stopAutomation() {
+            if (!currentConfiguration) {
+                showToast('A configuração da horta ainda está carregando.');
+                return;
+            }
+            if (!confirm('Desligar a automação? Isso pausará as leituras e bloqueará todas as irrigações automáticas, manuais e forçadas.')) {
+                return;
+            }
+            document.getElementById('config-mode').value = 'DESLIGADO';
+            saveConfiguration({
+                umidadeLimite: currentConfiguration.umidadeLimite,
+                luminosidadeLimite: currentConfiguration.luminosidadeLimite,
+                temperaturaLimite: currentConfiguration.temperaturaLimite,
+                tempoIrrigacaoPadrao: currentConfiguration.tempoIrrigacaoPadrao,
+                modoAutomacao: 'DESLIGADO'
+            });
+        }
+
+        document.getElementById('schedule-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const schedule = {
+                horarioExecucao: document.getElementById('schedule-time').value,
+                tempoIrrigacaoSegundos: Number(document.getElementById('schedule-duration').value)
+            };
+
+            fetch(`/api/horta/${hortaId}/agendamentos`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(schedule)
+            })
+                .then(response => {
+                    if (!response.ok) throw new Error('Não foi possível criar o agendamento.');
+                    return response.json();
+                })
+                .then(() => {
+                    document.getElementById('schedule-form').reset();
+                    loadSchedules();
+                    showToast('Agendamento diário salvo.');
+                })
+                .catch(() => showToast('Erro ao salvar o agendamento.'));
+        });
+
+        function loadSchedules() {
+            fetch(`/api/horta/${hortaId}/agendamentos`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Não foi possível carregar os agendamentos.');
+                    return response.json();
+                })
+                .then(schedules => {
+                    document.getElementById('schedule-list').innerHTML = schedules.map(schedule => `
+                        <li class="schedule-item">
+                            <span>${schedule.horarioExecucao.slice(0, 5)} — ${schedule.tempoIrrigacaoSegundos} segundos</span>
+                            <button type="button" class="schedule-delete" onclick="deleteSchedule(${schedule.idAgendamento})">Remover</button>
+                        </li>
+                    `).join('') || '<li>Nenhum horário cadastrado.</li>';
+                })
+                .catch(() => showToast('Erro ao carregar os agendamentos.'));
+        }
+
+        function deleteSchedule(scheduleId) {
+            fetch(`/api/horta/${hortaId}/agendamentos/${scheduleId}`, { method: 'DELETE' })
+                .then(response => {
+                    if (!response.ok) throw new Error('Não foi possível remover o agendamento.');
+                    loadSchedules();
+                    showToast('Agendamento removido.');
+                })
+                .catch(() => showToast('Erro ao remover o agendamento.'));
+        }
+
+        function formatBrasiliaTime(date) {
+            return new Intl.DateTimeFormat('pt-BR', {
+                timeZone: 'America/Sao_Paulo',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hourCycle: 'h23'
+            }).format(date);
+        }
+
+        function formatReadingTime(dateTimeValue) {
+            const match = String(dateTimeValue).match(/T(\d{2}:\d{2}:\d{2})/);
+            return match ? match[1] : formatBrasiliaTime(new Date(dateTimeValue));
+        }
+
+        function irrigationOriginLabel(origin) {
+            const labels = {
+                AUTOMATICO: 'Automático',
+                AGENDADO: 'Agendado',
+                MANUAL_FORCADO: 'Irrigação forçada'
+            };
+            return labels[origin] || origin;
+        }
+
+        function irrigationOriginClass(origin) {
+            const classes = {
+                AUTOMATICO: 'origin-automatic',
+                AGENDADO: 'origin-scheduled',
+                MANUAL_FORCADO: 'origin-forced'
+            };
+            return classes[origin] || 'origin-other';
+        }
+
+        function loadIrrigationStatus() {
+            fetch(`/api/horta/${hortaId}/irrigacao-ativa`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Não foi possível consultar a irrigação ativa.');
+                    return response.json();
+                })
+                .then(updateIrrigationStatus)
+                .catch(() => showToast('Erro ao consultar o estado da irrigação.'));
+        }
+
+        function updateIrrigationStatus(status) {
+            const previousOrigin = activeIrrigation && activeIrrigation.origem;
+            activeIrrigation = status.ativa ? status : null;
+
+            if (!status.ativa) {
+                if (irrigationTimer) finishIrrigationUI();
+                else updateForcedIrrigationAvailability();
+                return;
+            }
+
+            if (status.origem === 'MANUAL_FORCADO') {
+                isIrrigationActive = true;
+                if (!irrigationTimer || previousOrigin !== status.origem) {
+                    startIrrigationTimer(status.segundosRestantes, true);
+                } else {
+                    updateForcedIrrigationAvailability();
+                }
+                return;
+            }
+
+            isIrrigationActive = false;
+            if (!irrigationTimer || previousOrigin !== status.origem) {
+                startIrrigationTimer(status.segundosRestantes, false);
+            } else {
+                updateForcedIrrigationAvailability();
             }
         }
 
@@ -596,6 +1106,15 @@
                             backgroundColor: 'rgba(239, 68, 68, 0.1)',
                             fill: true,
                             tension: 0.3
+                        },
+                        {
+                            label: 'Luminosidade (Lux)',
+                            data: [],
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            fill: true,
+                            tension: 0.3,
+                            yAxisID: 'yLuminosidade'
                         }
                     ]
                 },
@@ -603,45 +1122,111 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: { legend: { position: 'top' } },
-                    scales: { y: { beginAtZero: true } }
+                    scales: {
+                        y: { beginAtZero: true },
+                        yLuminosidade: {
+                            beginAtZero: true,
+                            position: 'right',
+                            grid: { drawOnChartArea: false }
+                        }
+                    }
                 }
             });
         }
 
-        // FORCED IRRIGATION WITH 10-MIN LOCK (600 SECONDS)
+        // FORCED IRRIGATION TIMER
         function triggerIrrigation() {
-            if (isLocked) return;
+            if (!currentConfiguration) {
+                showToast('A configuração da horta ainda está carregando.');
+                return;
+            }
+            if (currentConfiguration.modoAutomacao === 'DESLIGADO') {
+                showToast('Irrigação indisponível enquanto a automação estiver desligada.');
+                return;
+            }
+            if (!confirm('Deseja iniciar uma irrigação forçada?')) {
+                return;
+            }
 
             const btn = document.getElementById('btn-irrigate');
-            fetch('/api/horta/1/irrigacao-forcada', { method: 'POST' }).catch(() => {});
-
-            showToast('💧 Irrigação forçada iniciada! Trava de 10 minutos ativada.');
-            
-            isLocked = true;
-            lockTimeRemaining = 600; // 10 minutes = 600 seconds
-            btn.disabled = true;
-
-            updateTimerButton();
-            lockTimer = setInterval(() => {
-                lockTimeRemaining--;
-                if (lockTimeRemaining <= 0) {
-                    clearInterval(lockTimer);
-                    isLocked = false;
-                    btn.disabled = false;
-                    btn.innerHTML = '<span>💧</span> Irrigar Agora';
-                    showToast('Pronto para novo acionamento de irrigação.');
-                } else {
-                    updateTimerButton();
-                }
-            }, 1000);
+            isStartingIrrigation = true;
+            updateForcedIrrigationAvailability();
+            fetch(`/api/horta/${hortaId}/irrigacao-forcada`, { method: 'POST' })
+                .then(response => {
+                    if (response.status === 409) {
+                        throw new Error('Outra irrigação está em andamento. Aguarde o término.');
+                    }
+                    if (!response.ok) throw new Error('Não foi possível iniciar a irrigação.');
+                    startIrrigationTimer(currentConfiguration.tempoIrrigacaoPadrao);
+                    showToast('Irrigação forçada iniciada.');
+                })
+                .catch(error => {
+                    showToast(error.message || 'Erro ao iniciar a irrigação.');
+                    loadIrrigationStatus();
+                })
+                .finally(() => {
+                    isStartingIrrigation = false;
+                    updateForcedIrrigationAvailability();
+                });
         }
 
-        function updateTimerButton() {
-            const btn = document.getElementById('btn-irrigate');
-            const min = Math.floor(lockTimeRemaining / 60);
-            const sec = lockTimeRemaining % 60;
-            const timeStr = `${min}:${sec < 10 ? '0' : ''}${sec}`;
-            btn.innerHTML = `<span>⏳</span> Bloqueado (${timeStr})`;
+        function startIrrigationTimer(durationSeconds, forced = true) {
+            if (irrigationTimer) clearInterval(irrigationTimer);
+            isIrrigationActive = forced;
+            if (forced) {
+                activeIrrigation = {
+                    ativa: true,
+                    origem: 'MANUAL_FORCADO',
+                    segundosRestantes: durationSeconds
+                };
+            }
+            irrigationEndsAt = Date.now() + durationSeconds * 1000;
+            updateForcedIrrigationAvailability();
+            updateIrrigationTimer();
+            irrigationTimer = setInterval(updateIrrigationTimer, 250);
+        }
+
+        function updateIrrigationTimer() {
+            const remainingSeconds = Math.max(0, Math.ceil((irrigationEndsAt - Date.now()) / 1000));
+            const minutes = Math.floor(remainingSeconds / 60);
+            const seconds = remainingSeconds % 60;
+            const timerPrefix = activeIrrigation && activeIrrigation.origem !== 'MANUAL_FORCADO'
+                ? `${irrigationOriginLabel(activeIrrigation.origem)} em andamento · `
+                : 'Tempo restante: ';
+            document.getElementById('irrigation-timer').innerText =
+                `${timerPrefix}${minutes}:${String(seconds).padStart(2, '0')}`;
+
+            if (remainingSeconds === 0) {
+                const wasForced = activeIrrigation && activeIrrigation.origem === 'MANUAL_FORCADO';
+                finishIrrigationUI();
+                if (wasForced) showToast('Irrigação encerrada pelo tempo padrão.');
+                loadIrrigationStatus();
+            }
+        }
+
+        function stopIrrigation() {
+            fetch(`/api/horta/${hortaId}/irrigacao-ativa/parar`, { method: 'POST' })
+                .then(response => {
+                    if (!response.ok) throw new Error('Não foi possível parar a irrigação.');
+                    finishIrrigationUI();
+                    showToast('Irrigação parada.');
+                })
+                .catch(error => {
+                    showToast(error.message || 'Erro ao parar a irrigação.');
+                    loadIrrigationStatus();
+                });
+        }
+
+        function finishIrrigationUI() {
+            if (irrigationTimer) {
+                clearInterval(irrigationTimer);
+                irrigationTimer = null;
+            }
+
+            isIrrigationActive = false;
+            activeIrrigation = null;
+            document.getElementById('irrigation-timer').innerText = '';
+            updateForcedIrrigationAvailability();
         }
 
         function showToast(msg) {

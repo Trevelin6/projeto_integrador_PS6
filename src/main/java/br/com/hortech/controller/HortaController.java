@@ -1,7 +1,13 @@
 package br.com.hortech.controller;
 
+import br.com.hortech.dto.AcionamentoResumo;
+import br.com.hortech.dto.AgendamentoIrrigacaoRequest;
+import br.com.hortech.dto.ConfiguracaoHortaRequest;
+import br.com.hortech.dto.IrrigacaoAtivaResponse;
 import br.com.hortech.model.*;
 import br.com.hortech.repository.*;
+import br.com.hortech.service.IrrigacaoControlService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -15,15 +21,21 @@ public class HortaController {
     private final SensorRepository sensorRepository;
     private final AcionamentoRepository acionamentoRepository;
     private final NotificacaoRepository notificacaoRepository;
+    private final AgendamentoIrrigacaoRepository agendamentoRepository;
+    private final IrrigacaoControlService irrigacaoControlService;
 
     public HortaController(HortaRepository hortaRepository,
                            SensorRepository sensorRepository,
                            AcionamentoRepository acionamentoRepository,
-                           NotificacaoRepository notificacaoRepository) {
+                           NotificacaoRepository notificacaoRepository,
+                           AgendamentoIrrigacaoRepository agendamentoRepository,
+                           IrrigacaoControlService irrigacaoControlService) {
         this.hortaRepository = hortaRepository;
         this.sensorRepository = sensorRepository;
         this.acionamentoRepository = acionamentoRepository;
         this.notificacaoRepository = notificacaoRepository;
+        this.agendamentoRepository = agendamentoRepository;
+        this.irrigacaoControlService = irrigacaoControlService;
     }
 
     @GetMapping("/{id}")
@@ -33,9 +45,41 @@ public class HortaController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PutMapping("/{id}/configuracao")
+    public ResponseEntity<Horta> atualizarConfiguracao(
+            @PathVariable Long id,
+            @Valid @RequestBody ConfiguracaoHortaRequest request) {
+        return hortaRepository.findById(id).map(horta -> {
+            horta.setUmidadeLimite(request.umidadeLimite());
+            horta.setLuminosidadeLimite(request.luminosidadeLimite());
+            horta.setTemperaturaLimite(request.temperaturaLimite());
+            horta.setTempoIrrigacaoPadrao(request.tempoIrrigacaoPadrao());
+            horta.setModoAutomacao(request.modoAutomacao());
+            Horta salva = hortaRepository.save(horta);
+            if ("DESLIGADO".equalsIgnoreCase(salva.getModoAutomacao())) {
+                irrigacaoControlService.pararAtiva(id, null);
+            }
+            return ResponseEntity.ok(salva);
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
     @GetMapping("/{id}/leituras")
     public List<HistoricoLeituraSensor> leituras(@PathVariable Long id) {
         return sensorRepository.findTop10ByHortaIdHortaOrderByIdLeituraDesc(id);
+    }
+
+    @GetMapping("/{id}/acionamentos")
+    public List<AcionamentoResumo> acionamentos(@PathVariable Long id) {
+        List<Long> idsLeitura = sensorRepository.findTop10ByHortaIdHortaOrderByIdLeituraDesc(id).stream()
+                .map(HistoricoLeituraSensor::getIdLeitura)
+                .toList();
+
+        return acionamentoRepository.findByLeitura_IdLeituraIn(idsLeitura).stream()
+                .map(acionamento -> new AcionamentoResumo(
+                        acionamento.getLeitura().getIdLeitura(),
+                        acionamento.getOrigem(),
+                        acionamento.getDataHoraAcionamento()))
+                .toList();
     }
 
     @GetMapping("/{id}/notificacoes")
@@ -43,18 +87,76 @@ public class HortaController {
         return notificacaoRepository.findByHortaIdHorta(id);
     }
 
+    @GetMapping("/{id}/agendamentos")
+    public ResponseEntity<List<AgendamentoIrrigacao>> agendamentos(@PathVariable Long id) {
+        if (!hortaRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(agendamentoRepository.findByHortaIdHortaOrderByHorarioExecucaoAsc(id));
+    }
+
+    @GetMapping("/{id}/irrigacao-ativa")
+    public ResponseEntity<IrrigacaoAtivaResponse> consultarIrrigacaoAtiva(@PathVariable Long id) {
+        if (!hortaRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(irrigacaoControlService.consultarAtiva(id));
+    }
+
+    @PostMapping("/{id}/agendamentos")
+    public ResponseEntity<AgendamentoIrrigacao> criarAgendamento(
+            @PathVariable Long id,
+            @Valid @RequestBody AgendamentoIrrigacaoRequest request) {
+        return hortaRepository.findById(id).map(horta -> {
+            AgendamentoIrrigacao agendamento = new AgendamentoIrrigacao();
+            agendamento.setHorta(horta);
+            agendamento.setHorarioExecucao(request.horarioExecucao());
+            agendamento.setTempoIrrigacaoSegundos(request.tempoIrrigacaoSegundos());
+            return ResponseEntity.status(201).body(agendamentoRepository.save(agendamento));
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{id}/agendamentos/{idAgendamento}")
+    public ResponseEntity<Void> excluirAgendamento(
+            @PathVariable Long id,
+            @PathVariable Long idAgendamento) {
+        return agendamentoRepository.findById(idAgendamento)
+                .filter(agendamento -> agendamento.getHorta().getIdHorta().equals(id))
+                .map(agendamento -> {
+                    agendamentoRepository.delete(agendamento);
+                    return ResponseEntity.noContent().<Void>build();
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping("/{id}/irrigacao-forcada")
     public ResponseEntity<String> acionarIrrigacaoForcada(@PathVariable Long id) {
         Horta horta = hortaRepository.findById(id).orElseThrow();
-        List<HistoricoLeituraSensor> ultimas = sensorRepository.findTop10ByHortaIdHortaOrderByIdLeituraDesc(id);
-
-        if (!ultimas.isEmpty()) {
-            HistoricoAcionamentoBomba acionamento = new HistoricoAcionamentoBomba();
-            acionamento.setLeitura(ultimas.get(0));
-            acionamento.setOrigem("MANUAL_FORCADO");
-            acionamentoRepository.save(acionamento);
+        if ("DESLIGADO".equalsIgnoreCase(horta.getModoAutomacao())) {
+            return ResponseEntity.status(409).body("Irrigação indisponível: automação desligada.");
         }
 
+        List<HistoricoLeituraSensor> ultimas = sensorRepository.findTop10ByHortaIdHortaOrderByIdLeituraDesc(id);
+
+        if (ultimas.isEmpty()) {
+            return ResponseEntity.status(409).body("Irrigação indisponível: ainda não há leituras de sensores.");
+        }
+
+        if (!irrigacaoControlService.iniciar(horta, ultimas.get(0), "MANUAL_FORCADO",
+                horta.getTempoIrrigacaoPadrao())) {
+            return ResponseEntity.status(409).body("Irrigação indisponível: outra irrigação está em andamento.");
+        }
         return ResponseEntity.ok("Irrigacao forcada ativada com sucesso por " + horta.getTempoIrrigacaoPadrao() + " segundos.");
+    }
+
+    @PostMapping("/{id}/irrigacao-ativa/parar")
+    public ResponseEntity<String> pararIrrigacaoAtiva(@PathVariable Long id) {
+        if (!hortaRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        if (!irrigacaoControlService.pararAtiva(id, null)) {
+            return ResponseEntity.status(409).body("Não há irrigação ativa para parar.");
+        }
+        return ResponseEntity.ok("Irrigação parada.");
     }
 }

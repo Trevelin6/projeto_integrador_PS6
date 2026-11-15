@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface SensorRepository extends JpaRepository<HistoricoLeituraSensor, Long> {
     List<HistoricoLeituraSensor> findTop10ByHortaIdHortaOrderByIdLeituraDesc(Long idHorta);
+    long countByHortaIdHorta(Long idHorta);
 }

@@ -1,7 +1,7 @@
 package br.com.hortech.model;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @Entity
 @Table(name = "agendamento_irrigacoes")
@@ -16,7 +16,7 @@ public class AgendamentoIrrigacao {
     private Horta horta;
 
     @Column(name = "horario_execucao", nullable = false)
-    private LocalDateTime horarioExecucao;
+    private LocalTime horarioExecucao;
 
     @Column(name = "tempo_irrigacao_segundos", nullable = false)
     private Integer tempoIrrigacaoSegundos;
@@ -29,8 +29,8 @@ public class AgendamentoIrrigacao {
     public Horta getHorta() { return horta; }
     public void setHorta(Horta horta) { this.horta = horta; }
 
-    public LocalDateTime getHorarioExecucao() { return horarioExecucao; }
-    public void setHorarioExecucao(LocalDateTime horarioExecucao) { this.horarioExecucao = horarioExecucao; }
+    public LocalTime getHorarioExecucao() { return horarioExecucao; }
+    public void setHorarioExecucao(LocalTime horarioExecucao) { this.horarioExecucao = horarioExecucao; }
 
     public Integer getTempoIrrigacaoSegundos() { return tempoIrrigacaoSegundos; }
     public void setTempoIrrigacaoSegundos(Integer tempoIrrigacaoSegundos) { this.tempoIrrigacaoSegundos = tempoIrrigacaoSegundos; }

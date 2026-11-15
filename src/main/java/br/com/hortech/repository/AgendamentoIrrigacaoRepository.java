@@ -5,5 +5,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface AgendamentoIrrigacaoRepository extends JpaRepository<AgendamentoIrrigacao, Long> {
-    List<AgendamentoIrrigacao> findByHortaIdHorta(Long idHorta);
+    List<AgendamentoIrrigacao> findByHortaIdHortaOrderByHorarioExecucaoAsc(Long idHorta);
+    List<AgendamentoIrrigacao> findByHorarioExecucao(java.time.LocalTime horarioExecucao);
 }
