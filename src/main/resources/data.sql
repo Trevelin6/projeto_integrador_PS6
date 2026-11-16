@@ -5,10 +5,6 @@ VALUES ('Horta Principal - Hortech', 45, 30, 600, 'AUTOMATICO', 300);
 
 INSERT INTO relacionamento_usuario_horta (id_usuario, id_horta, papel) VALUES (1, 1, 'PROPRIETARIO');
 
-INSERT INTO historico_leitura_sensores (id_horta, data_hora_leitura, umidade, temperatura, luminosidade) 
-VALUES (1, CURRENT_TIMESTAMP, 42, 26, 520);
-
-INSERT INTO historico_acionamento_bomba (id_leitura, data_hora_acionamento, origem) VALUES (1, CURRENT_TIMESTAMP, 'AUTOMATICO');
 
 INSERT INTO notificacao (id_horta, data_hora, assunto_alerta) 
 VALUES (1, CURRENT_TIMESTAMP, 'Sistema inicializado com sucesso');

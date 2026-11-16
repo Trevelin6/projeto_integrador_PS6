@@ -33,7 +33,7 @@ public class SensorEmulationService {
         this.irrigacaoControlService = irrigacaoControlService;
     }
 
-    @Scheduled(fixedRate = 15000)
+    @Scheduled(fixedRate = 60000)
     public void processarLeiturasEAutomacao() {
         hortaRepository.findAll().forEach(horta -> {
             if ("DESLIGADO".equalsIgnoreCase(horta.getModoAutomacao())) {

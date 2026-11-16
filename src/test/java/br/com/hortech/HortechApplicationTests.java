@@ -292,4 +292,46 @@ class HortechApplicationTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.ativa").value(false));
     }
+
+    @Test
+    @Transactional
+    void novaLeituraAbaixoDoLimiteDisparaIrrigacaoAutomatica() throws Exception {
+        Horta horta = new Horta();
+        horta.setNomeHorta("Horta telemetria");
+        horta.setUmidadeLimite(45);
+        horta.setTemperaturaLimite(30);
+        horta.setLuminosidadeLimite(600);
+        horta.setModoAutomacao("AUTOMATICO");
+        horta.setTempoIrrigacaoPadrao(120);
+        horta = hortaRepository.save(horta);
+        Long idHorta = horta.getIdHorta();
+
+        String response = mockMvc.perform(post("/api/horta/{id}/leituras", idHorta)
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "umidade": 20,
+                                  "temperatura": 27,
+                                  "luminosidade": 550
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.umidade").value(20))
+                .andExpect(jsonPath("$.temperatura").value(27))
+                .andExpect(jsonPath("$.luminosidade").value(550))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        Long idLeitura = new com.fasterxml.jackson.databind.ObjectMapper()
+                .readTree(response)
+                .get("idLeitura")
+                .asLong();
+
+        List<HistoricoAcionamentoBomba> acionamentos =
+                acionamentoRepository.findByLeitura_IdLeituraIn(List.of(idLeitura));
+
+        org.junit.jupiter.api.Assertions.assertEquals(1, acionamentos.size());
+        org.junit.jupiter.api.Assertions.assertEquals("AUTOMATICO", acionamentos.get(0).getOrigem());
+    }
 }

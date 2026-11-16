@@ -4,6 +4,7 @@ import br.com.hortech.dto.AcionamentoResumo;
 import br.com.hortech.dto.AgendamentoIrrigacaoRequest;
 import br.com.hortech.dto.ConfiguracaoHortaRequest;
 import br.com.hortech.dto.IrrigacaoAtivaResponse;
+import br.com.hortech.dto.LeituraSensorRequest;
 import br.com.hortech.model.*;
 import br.com.hortech.repository.*;
 import br.com.hortech.service.IrrigacaoControlService;
@@ -158,5 +159,27 @@ public class HortaController {
             return ResponseEntity.status(409).body("Não há irrigação ativa para parar.");
         }
         return ResponseEntity.ok("Irrigação parada.");
+    }
+
+    @PostMapping("/{id}/leituras")
+    public ResponseEntity<HistoricoLeituraSensor> registrarLeitura(
+            @PathVariable Long id,
+            @Valid @RequestBody LeituraSensorRequest request) {
+        return hortaRepository.findById(id).map(horta -> {
+            HistoricoLeituraSensor leitura = new HistoricoLeituraSensor();
+            leitura.setHorta(horta);
+            leitura.setUmidade(request.umidade());
+            leitura.setTemperatura(request.temperatura());
+            leitura.setLuminosidade(request.luminosidade());
+            HistoricoLeituraSensor salva = sensorRepository.save(leitura);
+
+            // Dispara a automação se o modo estiver ativo e a umidade estiver abaixo do limite
+            if ("AUTOMATICO".equalsIgnoreCase(horta.getModoAutomacao())
+                    && salva.getUmidade() < horta.getUmidadeLimite()) {
+                irrigacaoControlService.iniciar(horta, salva, "AUTOMATICO", horta.getTempoIrrigacaoPadrao());
+            }
+
+            return ResponseEntity.status(201).body(salva);
+        }).orElse(ResponseEntity.notFound().build());
     }
 }
