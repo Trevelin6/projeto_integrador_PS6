@@ -334,4 +334,39 @@ class HortechApplicationTests {
         org.junit.jupiter.api.Assertions.assertEquals(1, acionamentos.size());
         org.junit.jupiter.api.Assertions.assertEquals("AUTOMATICO", acionamentos.get(0).getOrigem());
     }
+
+    @Test
+    @Transactional
+    void cadastroEConsultaDeUsuariosFuncionamCorretamente() throws Exception {
+        String response = mockMvc.perform(post("/api/usuarios")
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nome": "Usuario Teste",
+                                  "email": "teste@hortech.com",
+                                  "senha": "senha123"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.nome").value("Usuario Teste"))
+                .andExpect(jsonPath("$.email").value("teste@hortech.com"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        // Ajuste "idUsuario" para "id" caso o atributo na sua classe Usuario tenha esse nome
+        Long idUsuario = new com.fasterxml.jackson.databind.ObjectMapper()
+                .readTree(response)
+                .get("idUsuario")
+                .asLong();
+
+        mockMvc.perform(get("/api/usuarios/{id}", idUsuario))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nome").value("Usuario Teste"))
+                .andExpect(jsonPath("$.email").value("teste@hortech.com"));
+
+        mockMvc.perform(get("/api/usuarios"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray());
+    }
 }
