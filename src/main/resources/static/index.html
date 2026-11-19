@@ -240,6 +240,7 @@
             cursor: pointer;
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
             transition: all 0.2s;
         }
@@ -734,12 +735,44 @@
 
         // VIEW SWITCHER
         function switchView(viewName, clickEvent) {
+            const currentView = document.querySelector('.view-content.active');
+            if (currentView && currentView.id === 'view-configuration'
+                    && viewName !== 'configuration' && hasUnsavedConfigurationChanges()) {
+                showToast('Salve as alterações antes de sair das configurações.');
+                return;
+            }
+
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.view-content').forEach(view => view.classList.remove('active'));
 
             clickEvent.currentTarget.classList.add('active');
             document.getElementById(`view-${viewName}`).classList.add('active');
         }
+
+        function hasUnsavedConfigurationChanges() {
+            if (!currentConfiguration) return false;
+
+            const fields = [
+                ['config-humidity-limit', 'umidadeLimite'],
+                ['config-luminosity-limit', 'luminosidadeLimite'],
+                ['config-temperature-limit', 'temperaturaLimite'],
+                ['config-default-irrigation-duration', 'tempoIrrigacaoPadrao']
+            ];
+            const numericFieldChanged = fields.some(([elementId, property]) => {
+                const value = document.getElementById(elementId).value;
+                return value === '' || Number(value) !== Number(currentConfiguration[property]);
+            });
+
+            return numericFieldChanged
+                || document.getElementById('config-mode').value !== currentConfiguration.modoAutomacao;
+        }
+
+        window.addEventListener('beforeunload', function(event) {
+            if (!hasUnsavedConfigurationChanges()) return;
+
+            event.preventDefault();
+            event.returnValue = '';
+        });
 
         // LOAD DATA
         function loadData() {
@@ -762,13 +795,15 @@
                                 origem: acionamento.origem,
                                 origemLabel: irrigationOriginLabel(acionamento.origem),
                                 origemClass: irrigationOriginClass(acionamento.origem),
-                                horario: formatReadingTime(acionamento.dataHoraAcionamento)
+                                horario: formatReadingTime(acionamento.dataHoraAcionamento),
+                                dataHora: acionamento.dataHoraAcionamento
                             });
                             acionamentosPorLeitura.set(acionamento.idLeitura, registros);
                         });
                         updateUI(data.map(d => ({
                             idLeitura: d.idLeitura,
                             time: formatReadingTime(d.dataHoraLeitura),
+                            dataHora: d.dataHoraLeitura,
                             umidade: d.umidade,
                             temp: d.temperatura,
                             lum: d.luminosidade,
@@ -798,20 +833,29 @@
 
             // Update Table
             const tbody = document.getElementById('table-body');
-            tbody.innerHTML = readings.map(r => `
+            const tableRows = readings.flatMap(reading => {
+                if (!reading.irrigationSources || reading.irrigationSources.length === 0) {
+                    return [{ ...reading, displayTime: reading.time, irrigationSource: null, eventTime: reading.dataHora || reading.time }];
+                }
+
+                return reading.irrigationSources.map(source => ({
+                    ...reading,
+                    displayTime: source.horario,
+                    irrigationSource: source,
+                    eventTime: source.dataHora || source.horario
+                }));
+            }).sort((a, b) => String(b.eventTime).localeCompare(String(a.eventTime)));
+
+            tbody.innerHTML = tableRows.map(r => `
                 <tr>
-                    <td>
-                        ${r.irrigationSources && r.irrigationSources.length
-                            ? r.irrigationSources.map(source => `<div>${source.horario}</div>`).join('')
-                            : r.time}
-                    </td>
+                    <td>${r.displayTime}</td>
                     <td><strong>${r.umidade}%</strong></td>
                     <td>${r.temp}°C</td>
                     <td>${r.lum} Lux</td>
-                    <td>${(r.irrigationSources || []).map(source =>
-                        `<span class="irrigation-origin ${source.origemClass}">${source.origemLabel}</span>`
-                    ).join('')}</td>
-                    <td>${r.irrigationSources && r.irrigationSources.length
+                    <td>${r.irrigationSource
+                        ? `<span class="irrigation-origin ${r.irrigationSource.origemClass}">${r.irrigationSource.origemLabel}</span>`
+                        : ''}</td>
+                    <td>${r.irrigationSource
                         ? '<span class="irrigation-check" aria-label="Irrigação acionada">✓</span>'
                         : ''}</td>
                 </tr>
@@ -931,7 +975,6 @@
                     showToast('Configuração salva com sucesso.');
                 })
                 .catch(() => {
-                    if (currentConfiguration) applyConfiguration(currentConfiguration);
                     showToast('Erro ao salvar a configuração.');
                 });
         }
@@ -946,6 +989,10 @@
         function stopAutomation() {
             if (!currentConfiguration) {
                 showToast('A configuração da horta ainda está carregando.');
+                return;
+            }
+            if (hasUnsavedConfigurationChanges()) {
+                showToast('Salve as alterações antes de parar a automação.');
                 return;
             }
             if (!confirm('Desligar a automação? Isso pausará as leituras e bloqueará todas as irrigações automáticas, manuais e forçadas.')) {
@@ -1031,7 +1078,7 @@
             const labels = {
                 AUTOMATICO: 'Automático',
                 AGENDADO: 'Agendado',
-                MANUAL_FORCADO: 'Irrigação forçada'
+                MANUAL_FORCADO: 'Irrigação Forçada'
             };
             return labels[origin] || origin;
         }
@@ -1190,11 +1237,15 @@
             const remainingSeconds = Math.max(0, Math.ceil((irrigationEndsAt - Date.now()) / 1000));
             const minutes = Math.floor(remainingSeconds / 60);
             const seconds = remainingSeconds % 60;
-            const timerPrefix = activeIrrigation && activeIrrigation.origem !== 'MANUAL_FORCADO'
-                ? `${irrigationOriginLabel(activeIrrigation.origem)} em andamento · `
-                : 'Tempo restante: ';
+            const irrigationType = activeIrrigation
+                ? {
+                    AUTOMATICO: 'Automática',
+                    AGENDADO: 'Agendada',
+                    MANUAL_FORCADO: 'Forçada'
+                }[activeIrrigation.origem] || 'Irrigação'
+                : 'Irrigação';
             document.getElementById('irrigation-timer').innerText =
-                `${timerPrefix}${minutes}:${String(seconds).padStart(2, '0')}`;
+                `${irrigationType}. Tempo restante: ${minutes}:${String(seconds).padStart(2, '0')}`;
 
             if (remainingSeconds === 0) {
                 const wasForced = activeIrrigation && activeIrrigation.origem === 'MANUAL_FORCADO';
